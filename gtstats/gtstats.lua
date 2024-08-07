@@ -56,12 +56,12 @@ while true do -- main loop
     for i = 1, machines[0] do
       local machine = machines[i].m
       local container = machines[i].c
-      container.gpu.set(1,(i * 3) - 2, "GT_Machine " .. ("%d"):format(i))
-      if machine.getWorkMaxProgress() ~= 0 then -- checks if machine is working
+      container.gpu.set(1,(i * 3) - 2, machine.getName() .. " " .. ("%d"):format(i))
+      if machine.isMachineActive() then -- checks if machine is working
         local maxProgress = machine.getWorkMaxProgress()
         local progress = machine.getWorkProgress()
         local percProgress = NormProgress(0, maxProgress, progress)
-        container.gpu.set(14,(i * 3) - 2, "Progress: " .. ("%d"):format(progress) .. " [" .. ("%3d"):format(math.floor(percProgress * 100)) .. "%]")
+        container.gpu.set(string.len(machine.getName()) + 3,(i * 3) - 2, "Progress: " .. ("%d"):format(progress) .. " [" .. ("%3d"):format(math.floor(percProgress * 100)) .. "%]")
 
         container.payload.value = percProgress
         container:draw()
@@ -72,6 +72,7 @@ while true do -- main loop
         term.clear()
         os.exit()
     end
+    term.clear()
 end
 
 --[[ 
