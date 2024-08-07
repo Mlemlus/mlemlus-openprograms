@@ -59,7 +59,7 @@ while true do -- main loop
       container.gpu.set(1,(i * 3) - 2, "GT_Machine " .. ("%d"):format(i))
       if machine.getWorkMaxProgress() ~= 0 then -- checks if machine is working
         local maxProgress = machine.getWorkMaxProgress()
-        local progress = machine.getWOrkProgress()
+        local progress = machine.getWorkProgress()
         local percProgress = NormProgress(0, maxProgress, progress)
         container.gpu.set(14,(i * 3) - 2, "Progress: " .. ("%d"):format(progress) .. " [" .. ("%3d"):format(math.floor(percProgress * 100)) .. "%]")
 
