@@ -52,6 +52,7 @@ for address, name in component.list("gt", false) do     -- check for connected g
 end
 
 term.clear()
+local clearCounter = 0
 while true do -- main loop
     for i = 1, machines[0] do
       local machine = machines[i].m
@@ -72,7 +73,11 @@ while true do -- main loop
         term.clear()
         os.exit()
     end
-    term.clear()
+    clearCounter = clearCounter + 1
+    if clearCounter == 20 then
+        term.clear()
+        clearCounter = 0
+    end
 end
 
 --[[ 
