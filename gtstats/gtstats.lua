@@ -31,7 +31,7 @@ local cerste = charts.Container {
 }
 
 function NormProgress(min, max, current) -- returns progress value between 0 and 1
-    local curStep = (current - min) / (max - min)
+    return (current - min) / (max - min)
 end
 
 local machines = {[0] = 0, {m = "machine", c = "container"}} -- index 0 stores the number of components in the table (I do not trust #machines)
