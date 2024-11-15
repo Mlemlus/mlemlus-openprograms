@@ -1,5 +1,6 @@
 -- GTOverseer controller
 local internet = require("internet")
+local component = require("component")
 local server = "http://10.21.31.5:40649/data"
 local session_id = ""
 
