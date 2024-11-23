@@ -80,7 +80,18 @@ function reset()
             component_data["power_source"] = {
             output_voltage = adapter.getOutputVoltage(),
             output_voltage_avg = adapter.getAverageElectricOutput(),
-            input_voltage = adapter.getInputVoltage(),
+            input_voltage_avg = adapter.getAverageElectricInput(),
+            eu_capacity = adapter.getStoredEUString(),
+            eu_capacity_current = adapter.getEUCapacityString(),
+            output_amp = adapter.getOutputAmperage()
+            }
+        end
+
+        -- Diesel generator
+        if adapter.getName() == "multimachine.dieselengine" then
+            component_data["power_source"] = {
+            output_voltage = adapter.getOutputVoltage(),
+            output_voltage_avg = adapter.getAverageElectricOutput(),
             input_voltage_avg = adapter.getAverageElectricInput(),
             eu_capacity = adapter.getStoredEUString(),
             eu_capacity_current = adapter.getEUCapacityString(),
