@@ -160,7 +160,7 @@ function update(ses_id) -- send work progress data if machine working
         ::continue::
     end
 
-    if oc_data == {} then -- no working machines, no update
+    if #oc_data == 0 then -- no working machines, no update
         return false
     end
 
