@@ -1,8 +1,10 @@
 -- GTOverseer controller
 local internet = require("internet")
 local component = require("component")
+local computer = require("computer")
+local term = require("term")
+local event = require("event")
 local server = "http://10.21.31.5:40649/data"
-local session_id = ""
 
 function toJSON(tbl)
     local result = '{'
@@ -48,12 +50,10 @@ end
 function reset()
     local oc_data = {}
     -- OC controller machine
-    for address in component.list("computer") do
-        oc_data[1] = {
-            name = "computer",
-            oc_address = address
-        }
-    end
+    oc_data[1] = {
+        name = "computer",
+        oc_address = computer.address()
+    }
 
     -- Iteration over GT machines
     for address in component.list("gt_machine") do
@@ -63,7 +63,10 @@ function reset()
             goto continue -- skip gt_machines that are not machines
         end
         local component_data = {}
-        local sensor_info = (adapter.getSensorInformation and adapter.getSensorInformation()) or ""
+        local sensor_info = ""
+        if machine_name:sub(1,12) ~= "basicmachine" then
+            sensor_info = (adapter.getSensorInformation and adapter.getSensorInformation()) or ""
+        end
 
         component_data["machine"] = {
             oc_address = address,
@@ -136,11 +139,54 @@ function reset()
 end
 
 -- function update()
-    -- check if machine has new problems
-    -- if yes add to address to data
-    -- send work progress data if machine working
+function update(ses_id) -- send work progress data if machine working
+    local oc_data = {}
 
+    -- Iteration over GT machines
+    for address in component.list("gt_machine") do
+        local adapter = component.proxy(address) -- proxy address for interaction
+        local machine_name = adapter.getName()
+        if machine_name:sub(1,5) == "cable" or machine_name:sub(1,7) == "gt_pipe" then
+            goto continue -- skip gt_machines that are not machines
+        end
+
+        if adapter.hasWork() then
+            local component_data = {
+                oc_address = address,
+                work_progress = adapter.getWorkProgress(),
+                work_progress_max = adapter.getWorkMaxProgress()
+            }
+            oc_data[#oc_data+1] = component_data
+        end
+        ::continue::
+    end
+
+    local data={}
+    data["session_id"] = ses_id
+    data["data"] = oc_data
+    data["status"] = "100" -- 100 HTTP code to update data 
+    return data
+end
+
+------- Inicialization -------
 local response = postData(reset())
-session_id = response:sub(4,-1) -- initial data reset and get session_id 
-print(session_id) --debug
+local session_id = response:sub(4,-1) -- initial data reset and get session_id 
+
+------- Main loop -------
+while true do
+    local task = response:sub(1,4)
+    if task == "100" then
+        response = postData(update(session_id))
+    elseif task == "205" then
+        response = postData(reset())
+        session_id = response:sub(4,-1)
+    end
+
+    -- break point if needed
+    if event.pull(1, "interrupted") then
+        term.clear()
+        print("stopped")
+        os.exit()
+    end
+end
 
