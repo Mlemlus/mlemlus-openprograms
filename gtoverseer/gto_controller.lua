@@ -36,7 +36,7 @@ function postData(tbl)
     local body = toJSON(tbl)
     local response, status = internet.request(server, body, { ["Content-Type"] = "application/json" })
 
-    if response then 
+    if response then
         local response_body = ""
         for chunk in response do -- build the response from chunks
             response_body = response_body .. chunk
@@ -138,7 +138,6 @@ function reset()
     return data
 end
 
--- function update()
 function update(ses_id) -- send work progress data if machine working
     local oc_data = {}
 
@@ -161,6 +160,10 @@ function update(ses_id) -- send work progress data if machine working
         ::continue::
     end
 
+    if oc_data == {} then -- no working machines, no update
+        return false
+    end
+
     local data={}
     data["session_id"] = ses_id
     data["data"] = oc_data
@@ -174,9 +177,12 @@ local session_id = response:sub(4,-1) -- initial data reset and get session_id
 
 ------- Main loop -------
 while true do
-    local task = response:sub(1,4)
+    local task = response:sub(1,3)
     if task == "100" then
-        response = postData(update(session_id))
+        local upd_data = update(session_id)
+        if upd_data then
+            response = postData(upd_data)
+        end
     elseif task == "205" then
         response = postData(reset())
         session_id = response:sub(4,-1)
