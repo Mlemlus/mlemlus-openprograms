@@ -138,7 +138,7 @@ function reset()
     return data
 end
 
-function update(ses_id) -- send work progress data if machine working
+function update(ses_id, work_table) -- send work progress data if machine working
     local oc_data = {}
 
     -- Iteration over GT machines
@@ -149,8 +149,10 @@ function update(ses_id) -- send work progress data if machine working
             goto continue -- skip gt_machines that are not machines
         end
 
+        -- Check if machine is working
         if adapter.hasWork() then
-            local component_data = {
+            work_table[address] = true
+            local component_data = { -- add machines work info to return data
                 oc_address = address,
                 work_progress = adapter.getWorkProgress(),
                 work_progress_max = adapter.getWorkMaxProgress()
@@ -158,6 +160,19 @@ function update(ses_id) -- send work progress data if machine working
             oc_data[#oc_data+1] = component_data
         end
         ::continue::
+    end
+
+    -- check if any machine stopped working
+    for address, _ in pairs(work_table) do
+        if component.proxy(address).hasWork() == false then
+            local component_data = { -- return 0 values for non-working machines
+            oc_address = address,
+            work_progress = 0,
+            work_progress_max = 0
+            }
+            oc_data[#oc_data+1] = component_data
+            work_table[address] = nil -- remove the address from table
+        end
     end
 
     if #oc_data == 0 then -- no working machines, no update
@@ -174,12 +189,12 @@ end
 ------- Inicialization -------
 local response = postData(reset())
 local session_id = response:sub(4,-1) -- initial data reset and get session_id 
-
+local work_table = {} -- holds addresses of working machines
 ------- Main loop -------
 while true do
     local task = response:sub(1,3)
     if task == "100" then
-        local upd_data = update(session_id)
+        local upd_data = update(session_id, work_table)
         if upd_data then
             response = postData(upd_data)
         end
