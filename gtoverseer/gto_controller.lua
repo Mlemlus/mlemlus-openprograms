@@ -26,11 +26,19 @@ function toJSON(tbl)
         result = result .. ','  -- add the , after value
     end
     if result:sub(-1) == ',' then
-        result = result:sub(1, -2)-- remove the last , 
+        result = result:sub(1, -2)-- remove the last ,
     end
     result = result .. '}'
     return result -- pray it works
 end
+
+function split (str, sep)
+    local output = {}
+    for val in str.gmatch(str, "([^"..sep.."]+)") do
+       table.insert(output, val)
+    end
+    return output
+ end
 
 function postData(tbl)
     local body = toJSON(tbl)
@@ -43,7 +51,7 @@ function postData(tbl)
         end
         return response_body, status
     else
-        return status
+        return nil, status
     end
 end
 
@@ -132,13 +140,15 @@ function reset()
 
         oc_data[#oc_data+1] = component_data
     end
+    print("Number of connected GT machines: " .. #oc_data)
     local data={}
+    data["oc_address"] = computer.address()
     data["data"] = oc_data
     data["status"] = "205" -- 205 HTTP code to reset content 
     return data
 end
 
-function update(ses_id, work_table) -- send work progress data if machine working
+function update(work_table) -- send work progress data if machine working
     local oc_data = {}
 
     -- Iteration over GT machines
@@ -180,34 +190,54 @@ function update(ses_id, work_table) -- send work progress data if machine workin
     end
 
     local data={}
-    data["session_id"] = ses_id
+    data["oc_address"] = computer.address()
     data["data"] = oc_data
     data["status"] = "100" -- 100 HTTP code to update data 
     return data
 end
 
+function configuration(conf_string)
+    local conf = split(conf_string,",")
+    update_rate = tonumber(conf[1]) -- remember kids, lua counts from 1!
+    print("New update rate: " .. update_rate)
+    local data={}
+    data["oc_address"] = computer.address()
+    data["status"] = "204" -- 100 HTTP code to update data
+    return data
+end
+
 ------- Inicialization -------
+term.clear()
+print("GregTech Overseer Controller")
+print("To exit the program use CTRL + C")
+print("Inicialization...")
+update_rate = 1
 local response = postData(reset())
-local session_id = response:sub(4,-1) -- initial data reset and get session_id 
 local work_table = {} -- holds addresses of working machines
+print("Finished inicialization")
 ------- Main loop -------
 while true do
     local task = response:sub(1,3)
     if task == "100" then
-        local upd_data = update(session_id, work_table)
+        local upd_data = update(work_table)
         if upd_data then
             response = postData(upd_data)
         end
     elseif task == "205" then
+        print("Updating connected machines list...")
         response = postData(reset())
-        session_id = response:sub(4,-1)
+        print("Connected machines list updated")
+    elseif task == "204" then
+        print("Recieved config update...")
+        response = postData(configuration(response:sub(4,-1)))
+        print("Finished config update")
     end
 
-    -- break point if needed
-    if event.pull(1, "interrupted") then
+
+    -- break point if needed, also doubles as update rate
+    if event.pull(update_rate, "interrupted") then
         term.clear()
         print("stopped")
         os.exit()
     end
 end
-
