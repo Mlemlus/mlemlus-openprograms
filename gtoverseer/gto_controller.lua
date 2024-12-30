@@ -167,6 +167,11 @@ function update(work_table) -- send work progress data if machine working
                 work_progress = adapter.getWorkProgress(),
                 work_progress_max = adapter.getWorkMaxProgress()
             }
+            -- If it has power storage update value
+            if adapter.getStoredEUString ~= nil then
+                component_data["eu_capacity_current"] = adapter.getStoredEUString()
+            end
+
             oc_data[#oc_data+1] = component_data
         end
         ::continue::
